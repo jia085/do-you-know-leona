@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>你有多了解里歐娜</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f7f6f3;
+    --surface:  #ffffff;
+    --border:   #e2e0da;
+    --blue:     #7b9eb5;
+    --blue-lt:  #dce8f0;
+    --blue-dk:  #5a7d96;
+    --text:     #2c2c2c;
+    --muted:    #9a9890;
+    --correct:  #6aab8e;
+    --wrong:    #c47b7b;
+    --partial:  #c4a464;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans TC', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── INTRO ── */
+  #intro {
+    display: none;
+    min-height: 100vh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 24px;
+    text-align: center;
+  }
+  #intro.active { display: flex; }
+
+  .intro-line {
+    width: 32px; height: 1.5px;
+    background: var(--blue);
+    margin: 0 auto 40px;
+    opacity: 0;
+    animation: fadeIn 0.8s 0.1s forwards;
+  }
+
+  .intro-label {
+    font-size: 11px; letter-spacing: 5px;
+    color: var(--blue); text-transform: uppercase;
+    margin-bottom: 28px;
+    opacity: 0; animation: fadeIn 0.8s 0.25s forwards;
+  }
+
+  .intro-title {
+    font-family: 'Noto Serif TC', serif;
+    font-size: clamp(36px, 8vw, 62px);
+    font-weight: 600; line-height: 1.2;
+    margin-bottom: 20px;
+    opacity: 0; animation: fadeIn 0.8s 0.4s forwards;
+  }
+
+  .intro-sub {
+    font-size: 14px; color: var(--muted); line-height: 1.9;
+    margin-bottom: 56px;
+    opacity: 0; animation: fadeIn 0.8s 0.55s forwards;
+  }
+
+  .intro-stats {
+    display: flex; gap: 48px; justify-content: center;
+    margin-bottom: 56px;
+    opacity: 0; animation: fadeIn 0.8s 0.7s forwards;
+  }
+
+  .stat { text-align: center; }
+  .stat-n {
+    font-family: 'Noto Serif TC', serif;
+    font-size: 32px; font-weight: 600; color: var(--blue-dk);
+  }
+  .stat-l { font-size: 11px; letter-spacing: 2px; color: var(--muted); margin-top: 4px; }
+  .stat-div { width: 1px; background: var(--border); align-self: stretch; }
+
+  .btn-start {
+    background: var(--blue); color: white; border: none;
+    padding: 14px 52px; font-size: 13px; letter-spacing: 3px;
+    font-family: 'Noto Sans TC', sans-serif;
+    border-radius: 2px; cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    opacity: 0; animation: fadeIn 0.8s 0.85s forwards;
+  }
+  .btn-start:hover { background: var(--blue-dk); transform: translateY(-1px); }
+
+  /* ── QUIZ ── */
+  #quiz { max-width: 600px; margin: 0 auto; padding: 56px 24px 100px; }
+
+  .quiz-top {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 56px;
+  }
+  .q-label { font-size: 11px; letter-spacing: 3px; color: var(--blue); white-space: nowrap; flex-shrink: 0; }
+  .progress-track { flex: 1; height: 1px; background: var(--border); position: relative; }
+  .progress-fill {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: var(--blue);
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  }
+  .score-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+
+  .q-wrap { animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1); }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-diff { font-size: 11px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 20px; }
+
+  .q-text {
+    font-family: 'Noto Serif TC', serif;
+    font-size: clamp(20px, 4vw, 26px); font-weight: 600; line-height: 1.5;
+    margin-bottom: 40px;
+  }
+
+  /* single-choice list */
+  .options { display: flex; flex-direction: column; }
+  .option-btn {
+    background: none; border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 18px 4px; color: var(--text);
+    font-size: 15px; font-family: 'Noto Sans TC', sans-serif; font-weight: 300;
+    cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 16px;
+    transition: color 0.15s, padding-left 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .options .option-btn:first-child { border-top: 1px solid var(--border); }
+  .option-btn::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0; background: var(--blue-lt); transition: width 0.2s; z-index: 0;
+  }
+  .option-btn:hover:not(:disabled)::before { width: 100%; }
+  .option-btn:hover:not(:disabled) { padding-left: 12px; }
+  .opt-key {
+    font-size: 11px; letter-spacing: 1px; color: var(--muted);
+    min-width: 16px; position: relative; z-index: 1;
+    transition: color 0.15s; flex-shrink: 0;
+  }
+  .option-btn:hover:not(:disabled) .opt-key { color: var(--blue-dk); }
+  .opt-text { position: relative; z-index: 1; }
+  .option-btn.selected { padding-left: 12px; color: var(--blue-dk); }
+  .option-btn.selected::before { width: 100%; }
+  .option-btn.selected .opt-key { color: var(--blue); font-weight: 500; }
+  .option-btn.is-correct { color: var(--correct) !important; padding-left: 12px; }
+  .option-btn.is-correct::before { width: 100% !important; background: rgba(106,171,142,0.1) !important; }
+  .option-btn.is-correct .opt-key { color: var(--correct) !important; }
+  .option-btn.is-wrong { color: var(--wrong) !important; padding-left: 12px; }
+  .option-btn.is-wrong::before { width: 100% !important; background: rgba(196,123,123,0.1) !important; }
+  .option-btn.is-wrong .opt-key { color: var(--wrong) !important; }
+  .option-btn.is-dim { opacity: 0.3; cursor: default; }
+  .option-btn:disabled { cursor: default; }
+
+  /* multi-choice checkbox grid */
+  .options-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .check-btn {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 6px; padding: 11px 14px;
+    color: var(--text); font-size: 14px;
+    font-family: 'Noto Sans TC', sans-serif; font-weight: 300;
+    cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 10px;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+  }
+  .check-btn:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-lt); }
+  .check-box {
+    width: 17px; height: 17px; flex-shrink: 0;
+    border: 1.5px solid var(--border); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; font-size: 10px; color: transparent;
+  }
+  .check-btn.selected { border-color: var(--blue); background: var(--blue-lt); }
+  .check-btn.selected .check-box { background: var(--blue); border-color: var(--blue); color: white; }
+  .check-btn.is-correct { border-color: var(--correct) !important; background: rgba(106,171,142,0.08) !important; color: var(--correct) !important; }
+  .check-btn.is-correct .check-box { background: var(--correct); border-color: var(--correct); color: white; }
+  .check-btn.is-wrong { border-color: var(--wrong) !important; background: rgba(196,123,123,0.08) !important; color: var(--wrong) !important; }
+  .check-btn.is-wrong .check-box { background: var(--wrong); border-color: var(--wrong); color: white; }
+  .check-btn.is-missed { border-color: var(--correct) !important; background: rgba(106,171,142,0.04) !important; opacity: 0.6; }
+  .check-btn.is-missed .check-box { border-color: var(--correct); }
+  .check-btn.is-dim { opacity: 0.25; cursor: default; }
+  .check-btn:disabled { cursor: default; }
+
+  .multi-submit { margin-top: 28px; display: none; }
+  .multi-submit.show { display: block; }
+
+  .btn-confirm {
+    background: none; border: 1px solid var(--blue); color: var(--blue);
+    padding: 10px 32px; font-size: 13px; letter-spacing: 2px;
+    font-family: 'Noto Sans TC', sans-serif;
+    border-radius: 2px; cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .btn-confirm:hover { background: var(--blue); color: white; }
+
+  .feedback {
+    display: none; margin-top: 32px;
+    padding: 20px 24px;
+    border-left: 2px solid var(--blue);
+    background: var(--surface);
+    font-size: 14px; line-height: 1.8;
+    animation: fadeIn 0.4s ease;
+  }
+  .feedback.show { display: block; }
+  .feedback.fb-correct { border-color: var(--correct); }
+  .feedback.fb-wrong   { border-color: var(--wrong); }
+  .feedback.fb-partial { border-color: var(--partial); }
+
+  .fb-tag {
+    display: block; font-size: 10px; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 8px; opacity: 0.5;
+  }
+
+  .btn-next {
+    display: none; margin-top: 40px;
+    background: none; border: none;
+    color: var(--blue-dk); font-size: 13px; letter-spacing: 3px;
+    text-transform: uppercase; font-family: 'Noto Sans TC', sans-serif;
+    cursor: pointer; padding: 0; position: relative;
+  }
+  .btn-next::after {
+    content: ''; position: absolute; left: 0; bottom: -2px;
+    width: 0; height: 1px; background: var(--blue-dk);
+    transition: width 0.3s;
+  }
+  .btn-next:hover::after { width: 100%; }
+  .btn-next.show { display: inline-block; }
+
+  /* ── RESULT ── */
+  #result {
+    display: none; min-height: 100vh;
+    flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 24px; text-align: center;
+  }
+  #result.active { display: flex; }
+
+  .r-emoji { font-size: 48px; margin-bottom: 32px; opacity: 0; animation: fadeIn 0.6s 0.1s forwards; }
+  .r-score {
+    font-family: 'Noto Serif TC', serif;
+    font-size: clamp(64px, 16vw, 100px); font-weight: 600;
+    color: var(--blue-dk); line-height: 1;
+    opacity: 0; animation: fadeIn 0.6s 0.3s forwards;
+  }
+  .r-denom {
+    font-size: 13px; color: var(--muted); letter-spacing: 2px; margin: 8px 0 24px;
+    opacity: 0; animation: fadeIn 0.6s 0.45s forwards;
+  }
+  .r-verdict {
+    font-family: 'Noto Serif TC', serif; font-size: 22px; font-weight: 600;
+    margin-bottom: 12px;
+    opacity: 0; animation: fadeIn 0.6s 0.55s forwards;
+  }
+  .r-desc {
+    font-size: 14px; color: var(--muted); line-height: 1.9; max-width: 320px;
+    margin-bottom: 56px;
+    opacity: 0; animation: fadeIn 0.6s 0.65s forwards;
+  }
+
+  .breakdown {
+    width: 100%; max-width: 420px; text-align: left;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 8px 0; margin-bottom: 48px;
+    opacity: 0; animation: fadeIn 0.6s 0.75s forwards;
+  }
+  .breakdown-title {
+    font-size: 10px; letter-spacing: 3px; color: var(--muted);
+    text-transform: uppercase; padding: 12px 0 4px;
+  }
+  .wrong-item {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 13px 0; font-size: 13px; line-height: 1.5;
+    border-bottom: 1px solid var(--border); gap: 16px;
+  }
+  .wrong-item:last-child { border-bottom: none; }
+  .wrong-q { color: var(--text); flex: 1; }
+  .wrong-ans { color: var(--correct); font-size: 12px; flex-shrink: 0; text-align: right; }
+
+  .btn-retry {
+    background: none; border: none; color: var(--muted);
+    font-size: 12px; letter-spacing: 4px; text-transform: uppercase;
+    font-family: 'Noto Sans TC', sans-serif; cursor: pointer; padding: 0;
+    position: relative; transition: color 0.2s;
+    opacity: 0; animation: fadeIn 0.6s 0.85s forwards;
+  }
+  .btn-retry:hover { color: var(--text); }
+  .btn-retry::after {
+    content: ''; position: absolute; left: 0; bottom: -3px;
+    width: 0; height: 1px; background: var(--text); transition: width 0.3s;
+  }
+  .btn-retry:hover::after { width: 100%; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="intro" class="screen active">
+  <div class="intro-line"></div>
+  <p class="intro-label">do-you-know-leona · 2025</p>
+  <h1 class="intro-title">你有多了解里歐娜？</h1>
+  <p class="intro-sub">20 道關於里歐娜的題目<br>看看你能拿幾分</p>
+  <div class="intro-stats">
+    <div class="stat"><div class="stat-n">20</div><div class="stat-l">題目</div></div>
+    <div class="stat-div"></div>
+    <div class="stat"><div class="stat-n">100</div><div class="stat-l">總分</div></div>
+    <div class="stat-div"></div>
+    <div class="stat"><div class="stat-n">5min</div><div class="stat-l">時間</div></div>
+  </div>
+  <button class="btn-start" onclick="startQuiz()">開始測驗</button>
+</div>
+
+<div id="quiz" class="screen">
+  <div id="quiz-inner" style="max-width:600px;margin:0 auto;padding:56px 24px 100px;">
+    <div class="quiz-top">
+      <span class="q-label" id="q-label">Q 01 / 20</span>
+      <div class="progress-track"><div class="progress-fill" id="p-fill" style="width:0%"></div></div>
+      <span class="score-label" id="score-label">0 分</span>
+    </div>
+    <div id="q-wrap" class="q-wrap"></div>
+  </div>
+</div>
+
+<div id="result" class="screen">
+  <div id="r-emoji" class="r-emoji"></div>
+  <div class="r-score" id="r-score"></div>
+  <div class="r-denom">/ 100 分</div>
+  <div class="r-verdict" id="r-verdict"></div>
+  <div class="r-desc" id="r-desc"></div>
+  <div class="breakdown" id="wrong-list"></div>
+  <button class="btn-retry" onclick="startQuiz()">再玩一次</button>
+</div>
+
+<script>
+const QS = [
+  { type:'S', diff:'H', pts:8, dl:'超硬 · 8分',
+    text:'我的學號是什麼？',
+    opts:['113462003','114462003','113462004','113463003'], ans:'113462003',
+    ok:'為什麼你會知道？？', no:'你一定沒有跟我去過討論室！譴責！' },
+  { type:'S', diff:'H', pts:8, dl:'超硬 · 8分',
+    text:'我的近視度數是多少？',
+    opts:['左眼 375 右眼 175','左眼 175 右眼 375','左眼 175 右眼 175','左眼 375 右眼 375'],
+    ans:'左眼 375 右眼 175',
+    ok:'你比我媽還了解我的眼睛', no:'左右眼都搞錯了？正確是左眼 375 右眼 175' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我的電話後三碼是什麼？',
+    opts:['085','805','508','850'], ans:'085',
+    ok:'猴！你存了我電話！', no:'085 啦，記一下' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我現在的身高是幾公分（最近量的）？',
+    opts:['166','163','164','168'], ans:'166',
+    ok:'你有偷量過我嗎？？', no:'166 喔，研究所還長高兩公分' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我最喜歡喝什麼酒？',
+    opts:['梅酒','柚子酒','伏特加','紅酒'], ans:'梅酒',
+    ok:'你懂！你跟我喝過！', no:'你怎麼會不知道我最喜歡梅酒...' },
+  { type:'M', diff:'MULTI', pts:8, dl:'多選 · 最多 8 分',
+    text:'哪些是我會的程式語言？（可多選）',
+    opts:['HTML','CSS','Javascript','Python','C#','C','C++','Swift','Java','Rust'],
+    ans:['HTML','CSS','Javascript','Python','C#'],
+    ok:'你有在聽我講 side project！', part:'有在聽但沒很專心', no:'你確定你是我朋友嗎' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我的貓叫什麼名字？',
+    opts:['Mira','Mina','Mia','Ona'], ans:'Mira',
+    ok:'謝謝你記得她的名字 🐱', no:'她叫 Mira，你連我貓都不認識？' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我有幾個地方有刺青？',
+    opts:['3','1','2','4'], ans:'3',
+    ok:'你怎麼會知道的這麼清楚 😺', no:'3 個，下次仔細看' },
+  { type:'M', diff:'MULTI', pts:9, dl:'多選 · 最多 9 分',
+    text:'哪些是我去過的城市？（可多選）',
+    opts:['大阪','京都','香港','重慶','北京','曼谷','上海','東京','清邁','新加坡'],
+    ans:['大阪','京都','香港','重慶','北京','曼谷'],
+    ok:'你有在認真看我分享窩！', part:'有在聽但沒很專心', no:'你確定你是我朋友嗎' },
+  { type:'S', diff:'H', pts:8, dl:'超硬 · 8分',
+    text:'哪一個不是我用過的瀏覽器？',
+    opts:['ChatGPT Atlas','Safari','Chrome','Arc','Microsoft Edge','Perplexity Comet'], ans:'ChatGPT Atlas',
+    ok:'你是不是真的在偷偷監視我', no:'我知道這題有點難，我是不信 GPT 出的瀏覽器' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我最喜歡的 F1 車手是誰？',
+    opts:['Charles Leclerc','Max Verstappen','Lewis Hamilton','George Russell','Kimi Antonelli','Oscar Piastri'],
+    ans:'Charles Leclerc',
+    ok:'讚，真朋友，你懂我 😉', no:'是 Leclerc 啦，我發過多少次！' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'哪個是我學過的運動？',
+    opts:['柔道','跆拳道','空手道','劍道'], ans:'柔道',
+    ok:'你竟然記得我學過柔道！', no:'柔道啦，我沒講過嗎？' },
+  { type:'M', diff:'MULTI', pts:8, dl:'多選 · 最多 8 分',
+    text:'請選出我敢吃的食物（可多選）',
+    opts:['秋葵','芋頭','山藥','南瓜','苦瓜','青椒','甜椒','芹菜','香菜','茄子','香菇','納豆'],
+    ans:['秋葵','芋頭','山藥','香菜'],
+    ok:'你太強了 😭', part:'有在聽但沒很專心，補充一下芋頭跟香菜我敢吃但不愛吃', no:'你確定你是我朋友嗎，補充一下芋頭跟香菜我敢吃但不愛吃' },
+  { type:'S', diff:'E', pts:1, dl:'簡單 · 1分',
+    text:'我是左撇子還是右撇子？',
+    opts:['左撇子','右撇子'], ans:'左撇子',
+    ok:'哦你有在注意我齁！', no:'我是左撇子！你根本沒注意過我寫字' },
+  { type:'S', diff:'E', pts:1, dl:'簡單 · 1分',
+    text:'我比較喜歡吃飯還是吃麵？',
+    opts:['飯','麵'], ans:'飯',
+    ok:'廢話，你跟我吃過多少次飯', no:'我是飯派，麵只是備案' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我有幾個耳洞？',
+    opts:['2','3','4','5'], ans:'2',
+    ok:'有在看我耳朵，好害羞...', no:'2 個，一邊一個，很基本' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我是霍格華茲的哪個學院？',
+    opts:['史萊哲林','葛萊芬多','雷文克勞','赫夫帕夫'], ans:'史萊哲林',
+    ok:'純血萬歲 🐍', no:'史萊哲林！我不是那種正義感爆棚的人ㄏㄏ' },
+  { type:'S', diff:'E', pts:1, dl:'簡單 · 1分',
+    text:'我最喜歡的顏色是什麼？',
+    opts:['藍色','綠色','紅色','黃色'], ans:'藍色',
+    ok:'廢話，這很明顯拔', no:'是藍色，你平常沒在關心我！' },
+  { type:'S', diff:'M', pts:4, dl:'中等 · 4分',
+    text:'我的 IG 帳號是什麼？',
+    opts:['jia.o85','jia.085','jia.o8o5','jia.0805'], ans:'jia.o85',
+    ok:'你是不是常常看我 IG 😳', no:'jia.o85，那個 o 是英文字母不是數字' },
+  { type:'S', diff:'H', pts:8, dl:'超硬 · 8分',
+    text:'我沒有裝下面哪一個 IDE？',
+    opts:['PyCharm','VS Code','Visual Studio','Cursor','Xcode'], ans:'PyCharm',
+    ok:'你是不是有偷看我電腦，我已經裝防窺膜了餒', no:'答案是 PyCharm，根本沒用過' },
+];
+
+const KEYS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
+let cur=0, total=0, byDiff={H:0,M:0,E:0,MULTI:0}, answered=false, picked=[], wrongLog=[];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--) {
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz() {
+  cur=0; total=0; byDiff={H:0,M:0,E:0,MULTI:0}; wrongLog=[];
+  showScreen('quiz'); render();
+}
+
+let shuffledOpts = [];
+
+function render() {
+  const q = QS[cur];
+  answered=false; picked=[];
+  shuffledOpts = shuffle(q.opts);
+  document.getElementById('q-label').textContent = `Q ${String(cur+1).padStart(2,'0')} / 20`;
+  document.getElementById('score-label').textContent = `${fmt(total)} 分`;
+  document.getElementById('p-fill').style.width = (cur/QS.length*100)+'%';
+
+  let optsHTML;
+  if(q.type==='S') {
+    optsHTML = `<div class="options">${shuffledOpts.map((o,i)=>`
+      <button class="option-btn" id="o${i}" onclick="tog(${i})">
+        <span class="opt-key">${KEYS[i]}</span>
+        <span class="opt-text">${o}</span>
+      </button>`).join('')}</div>`;
+  } else {
+    optsHTML = `<div class="options-grid">${shuffledOpts.map((o,i)=>`
+      <button class="check-btn" id="o${i}" onclick="tog(${i})">
+        <span class="check-box">✓</span>
+        <span>${o}</span>
+      </button>`).join('')}</div>`;
+  }
+
+  document.getElementById('q-wrap').innerHTML = `
+    <div class="q-diff">${q.dl}</div>
+    <div class="q-text">${q.text}</div>
+    ${optsHTML}
+    <div class="multi-submit" id="ms">
+      <button class="btn-confirm" onclick="submitAns()">確認送出</button>
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="btn-next" id="bn" onclick="next()">
+      ${cur===QS.length-1?'查看結果 →':'下一題 →'}</button>`;
+}
+
+function tog(i) {
+  if(answered) return;
+  const q=QS[cur], val=shuffledOpts[i], btn=document.getElementById('o'+i);
+  if(q.type==='S') {
+    if(picked.length>0) {
+      const prev=shuffledOpts.indexOf(picked[0]);
+      if(prev>=0) document.getElementById('o'+prev).classList.remove('selected');
+    }
+    picked=[val];
+    btn.classList.add('selected');
+  } else {
+    if(picked.includes(val)) { picked=picked.filter(v=>v!==val); btn.classList.remove('selected'); }
+    else { picked.push(val); btn.classList.add('selected'); }
+  }
+  document.getElementById('ms').classList.toggle('show', picked.length>0);
+}
+
+function submitAns() {
+  if(answered || picked.length===0) return;
+  answered=true;
+  const q=QS[cur];
+  document.getElementById('ms').style.display='none';
+
+  if(q.type==='S') {
+    const sel=picked[0], isOk=sel===q.ans, pts=isOk?q.pts:0;
+    total+=pts; if(isOk) byDiff[q.diff]+=pts;
+    document.querySelectorAll('.option-btn').forEach((b,j)=>{
+      b.disabled=true;
+      if(shuffledOpts[j]===q.ans) b.classList.add('is-correct');
+      else if(shuffledOpts[j]===sel) b.classList.add('is-wrong');
+      else b.classList.add('is-dim');
+    });
+    if(!isOk) wrongLog.push({q:q.text, ans: Array.isArray(q.ans)?q.ans.join('、'):q.ans});
+    showFb(isOk?'correct':'wrong', isOk?q.ok:q.no);
+    document.getElementById('score-label').textContent=`${fmt(total)} 分`;
+  } else {
+    const cp=picked.filter(v=>q.ans.includes(v)).length;
+    const wp=picked.filter(v=>!q.ans.includes(v)).length;
+    const pts=Math.round(Math.max(0,cp-wp)/q.ans.length*q.pts*10)/10;
+    total+=pts; byDiff.MULTI+=pts;
+    document.querySelectorAll('.check-btn').forEach((b,j)=>{
+      b.disabled=true;
+      const v=shuffledOpts[j], inA=q.ans.includes(v), inP=picked.includes(v);
+      if(inA&&inP) b.classList.add('is-correct');
+      else if(!inA&&inP) b.classList.add('is-wrong');
+      else if(inA) b.classList.add('is-missed');
+      else b.classList.add('is-dim');
+    });
+    const type=cp===q.ans.length&&wp===0?'correct':cp===0?'wrong':'partial';
+    if(type!=='correct') wrongLog.push({q:q.text, ans:q.ans.join('、')});
+    const msg=type==='correct'?q.ok:type==='wrong'?q.no:q.part+`（答對 ${cp}／${q.ans.length} 個，得 ${pts} 分）`;
+    showFb(type, msg);
+    document.getElementById('score-label').textContent=`${fmt(total)} 分`;
+  }
+  document.getElementById('bn').classList.add('show');
+}
+
+function showFb(type, msg) {
+  const fb=document.getElementById('fb');
+  const tag={correct:'答對了',wrong:'答錯了',partial:'部分正確'}[type];
+  fb.className=`feedback show fb-${type}`;
+  fb.innerHTML=`<span class="fb-tag">${tag}</span>${msg}`;
+}
+
+function next() {
+  cur++;
+  if(cur>=QS.length) showResult();
+  else { render(); window.scrollTo({top:0,behavior:'smooth'}); }
+}
+
+function fmt(n) { return Math.round(n*10)/10; }
+
+function showResult() {
+  showScreen('result');
+  const s=fmt(total);
+  document.getElementById('r-score').textContent=s;
+  let emoji,verdict,desc;
+  if(s>=90)      {emoji='👑';verdict='神等級！完全了解我';  desc='你是認識我最深的人，有點可怕但我接受';}
+  else if(s>=70) {emoji='🎉';verdict='很熟，是真朋友';      desc='你真的有在聽我講話，感動';}
+  else if(s>=50) {emoji='🙂';verdict='還不錯，算認識';      desc='有在關心我，但還有些細節要補強';}
+  else if(s>=30) {emoji='😅';verdict='普通朋友而已';        desc='可以更了解我一點，我不咬人的';}
+  else           {emoji='😢';verdict='你根本不認識我';       desc='你確定我們是朋友嗎？建議重新認識一下';}
+  document.getElementById('r-emoji').textContent=emoji;
+  document.getElementById('r-verdict').textContent=verdict;
+  document.getElementById('r-desc').textContent=desc;
+
+  const wl = document.getElementById('wrong-list');
+  if(wrongLog.length===0) {
+    wl.innerHTML='<div style="padding:20px 0;text-align:center;font-size:13px;color:var(--correct);letter-spacing:2px;">全部答對！🎉</div>';
+  } else {
+    wl.innerHTML=`<div class="breakdown-title">答錯的題目（${wrongLog.length} 題）</div>`
+      + wrongLog.map(w=>`<div class="wrong-item">
+          <span class="wrong-q">${w.q}</span>
+          <span class="wrong-ans">正確：${w.ans}</span>
+        </div>`).join('');
+  }
+}
+</script>
+</body>
+</html>
